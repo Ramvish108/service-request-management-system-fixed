@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../api/api';
 import { KeyRound, Mail, AlertCircle, RefreshCw } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -19,18 +18,19 @@ export const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/login', { email, password });
-      const { token, user } = response.data;
+      console.log('📝 Login attempt:', { email }); // Debug
       
-      login(token, user);
+      // ✅ Call login from AuthContext
+      await login(email, password);
       
-      if (user.role === 'ADMIN') {
-        navigate('/admin');
-      } else {
-        navigate('/dashboard');
-      }
+      console.log('✅ Login successful, redirecting...');
+      // Redirect is handled in AuthContext
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Something went wrong during login.');
+      console.error('❌ Login error:', err);
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.details || 
+                          'Something went wrong during login.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export const Login: React.FC = () => {
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start space-x-2">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <span class="text-sm text-red-700">{error}</span>
+            <span className="text-sm text-red-700">{error}</span>
           </div>
         )}
 
@@ -109,7 +109,7 @@ export const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition shadow-md"
+              className="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <RefreshCw className="animate-spin h-5 w-5 text-white" />
@@ -122,8 +122,8 @@ export const Login: React.FC = () => {
 
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-6 text-xs text-slate-500 space-y-1">
           <p className="font-semibold text-slate-700">Default Seed Credentials:</p>
-          <p>User: <code class="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">user@example.com</code> / <code class="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">User@123</code></p>
-          <p>Admin: <code class="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">admin@example.com</code> / <code class="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">Admin@123</code></p>
+          <p>User: <code className="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">user@example.com</code> / <code className="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">User@123</code></p>
+          <p>Admin: <code className="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">admin@example.com</code> / <code className="bg-slate-200 px-1 py-0.5 rounded text-red-600 font-mono">Admin@123</code></p>
         </div>
       </div>
     </div>

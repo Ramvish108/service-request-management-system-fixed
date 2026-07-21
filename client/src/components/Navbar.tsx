@@ -1,93 +1,75 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Wrench, Menu, X, LogOut, LayoutDashboard, PlusCircle, ShieldAlert, User, Users } from 'lucide-react';
+import { Menu, X, Home, FileText, User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+    setMobileMenuOpen(false);
+  };
+
+  // ✅ FIXED: Toggle function
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50">
+    <nav className="bg-white shadow-md border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <div className="bg-brand-600 text-white p-2 rounded-lg">
-                <Wrench className="h-5 w-5" />
-              </div>
-              <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">
-                JASIQ Labs SRMS
-              </span>
+              <span className="text-brand-600 font-bold text-xl">SRMS</span>
+              <span className="text-slate-400 text-sm hidden sm:inline">Service Request</span>
             </Link>
           </div>
 
+          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
+            {isAuthenticated ? (
               <>
-                <Link to="/dashboard" className="flex items-center space-x-1 text-slate-600 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition">
-                  <LayoutDashboard className="h-4 w-4" />
-                  <span>Dashboard</span>
+                <Link to="/dashboard" className="text-slate-600 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition">
+                  Dashboard
                 </Link>
-                
-                <Link to="/create-request" className="flex items-center space-x-1 text-slate-600 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition">
-                  <PlusCircle className="h-4 w-4" />
-                  <span>New Request</span>
+                <Link to="/create-request" className="text-slate-600 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition">
+                  New Request
                 </Link>
-
-                <Link to="/profile" className="flex items-center space-x-1 text-slate-600 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition">
-                  <User className="h-4 w-4" />
-                  <span>Profile</span>
-                </Link>
-
-                {user.role === 'ADMIN' && (
-                  <>
-                    <Link to="/admin" className="flex items-center space-x-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md text-sm font-medium transition border border-red-200">
-                      <ShieldAlert className="h-4 w-4" />
-                      <span>Admin Panel</span>
-                    </Link>
-                    <Link to="/admin/users" className="flex items-center space-x-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md text-sm font-medium transition border border-red-200">
-                      <Users className="h-4 w-4" />
-                      <span>Users</span>
-                    </Link>
-                  </>
+                {isAdmin && (
+                  <Link to="/admin" className="text-slate-600 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition">
+                    Admin Panel
+                  </Link>
                 )}
-
-                <div className="h-6 w-px bg-slate-200 mx-2"></div>
-                
-                <div className="flex items-center space-x-3">
-                  <span className="text-sm text-slate-500 font-medium">Hi, {user.name}</span>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </button>
-                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-slate-600 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium transition"
+                >
+                  Logout
+                </button>
               </>
             ) : (
               <>
                 <Link to="/login" className="text-slate-600 hover:text-brand-600 px-3 py-2 rounded-md text-sm font-medium transition">
                   Login
                 </Link>
-                <Link to="/register" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                <Link to="/register" className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
                   Register
                 </Link>
               </>
             )}
           </div>
 
-          <div className="flex items-center md:hidden">
+          {/* ✅ FIXED: Mobile Menu Button with Toggle */}
+          <div className="md:hidden flex items-center">
             <button
-              onClick={() => setMobileMenuOpen(false)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none"
+              onClick={toggleMobileMenu} // ✅ FIXED: Using toggle function
+              className="text-slate-600 hover:text-brand-600 p-2 rounded-md focus:outline-none"
+              aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -95,50 +77,61 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-2 pt-2 pb-3 space-y-1">
-          {user ? (
-            <>
-              <Link to="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">
-                Dashboard
-              </Link>
-              <Link to="/create-request" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">
-                New Request
-              </Link>
-              <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">
-                Profile
-              </Link>
-              {user.role === 'ADMIN' && (
-                <>
-                  <Link to="/admin" className="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">
+        <div className="md:hidden bg-white border-t border-slate-200">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/create-request"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  New Request
+                </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Admin Panel
                   </Link>
-                  <Link to="/admin/users" className="block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50">
-                    User Management
-                  </Link>
-                </>
-              )}
-              <div className="border-t border-slate-200 my-2 pt-2 px-3">
-                <p className="text-sm font-medium text-slate-500">Logged in as {user.name}</p>
+                )}
                 <button
                   onClick={handleLogout}
-                  className="mt-2 w-full flex justify-center items-center space-x-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-base font-medium transition"
+                  className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50 transition"
                 >
-                  <LogOut className="h-5 w-5" />
-                  <span>Logout</span>
+                  Logout
                 </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">
-                Login
-              </Link>
-              <Link to="/register" className="block px-3 py-2 rounded-md text-base font-medium text-brand-600 hover:bg-slate-100">
-                Register
-              </Link>
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-slate-50 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-brand-600 hover:bg-brand-50 transition"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Register
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       )}
     </nav>

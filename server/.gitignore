@@ -1,7 +1,12 @@
-node_modules/
+# Create .gitignore
+echo "node_modules/
 .env
+.DS_Store
 dist/
 build/
-.vite/
+*.log
+.vscode/
+.idea/
 coverage/
-.env.example
+.vite/
+*.tsbuildinfo" > .gitignore

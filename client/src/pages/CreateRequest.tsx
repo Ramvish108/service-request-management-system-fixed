@@ -21,6 +21,7 @@ export const CreateRequest: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // ✅ FIXED: AI Analysis Handler
   const handleAIAnalyze = async () => {
     if (!title || !description) {
       setError('Please provide both Title and Description before requesting AI analysis.');
@@ -31,13 +32,15 @@ export const CreateRequest: React.FC = () => {
     setLoadingAI(true);
 
     try {
-      const response = await api.post('/ai/analyze', { title, description });
+      // ✅ FIXED: Correct endpoint
+      const response = await api.post('/ai/analyze-request', { title, description });
 
+      // ✅ FIXED: Correct response keys
       const {
-        aiSummary: fetchedSummary,
-        aiSuggestedCategory: fetchedCategory,
-        aiSuggestedPriority: fetchedPriority,
-        aiReason: fetchedReason
+        summary: fetchedSummary,
+        suggestedCategory: fetchedCategory,
+        suggestedPriority: fetchedPriority,
+        reason: fetchedReason
       } = response.data;
 
       setAiSummary(fetchedSummary || 'No summary returned');
@@ -50,6 +53,8 @@ export const CreateRequest: React.FC = () => {
       setLoadingAI(false);
     } catch (err: any) {
       setError(`AI analysis failed: ${err.response?.data?.error || err.message}`);
+      // ✅ FIXED: Reset loading state on error
+      setLoadingAI(false);
     }
   };
 
@@ -194,10 +199,12 @@ export const CreateRequest: React.FC = () => {
                 Analyze your input to generate a concise summary and suggested configuration metrics.
               </p>
 
+              {/* ✅ FIXED: Added disabled={loadingAI} */}
               <button
                 type="button"
                 onClick={handleAIAnalyze}
-                className="w-full flex justify-center items-center space-x-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm hover:from-brand-700 hover:to-indigo-700 transition"
+                disabled={loadingAI}
+                className="w-full flex justify-center items-center space-x-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm hover:from-brand-700 hover:to-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingAI ? (
                   <>
@@ -241,7 +248,7 @@ export const CreateRequest: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-md transition"
+              className="flex items-center space-x-2 bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-lg text-sm font-semibold shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send className="h-4 w-4" />
               <span>{loading ? 'Submitting...' : 'Submit Request'}</span>

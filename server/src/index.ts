@@ -14,9 +14,9 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 const corsOptions = {
-  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000/',
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type'],
+  origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000', // before it is 3000/
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE','OPTIONS'],// added put patch delete
+  allowedHeaders: ['Content-Type', 'Authorization'], // added authorization
   credentials: true,
 };
 
@@ -35,8 +35,12 @@ app.get('/api/health/ai', (req, res) => {
   res.status(200).json({ status: 'OK', provider: process.env.AI_PROVIDER || 'mock' });
 });
 
-app.use((req, res, next) => {
-  res.status(500).json({ error: 'Endpoint not found or server error' });
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('❌ Server error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 app.listen(PORT, () => {
