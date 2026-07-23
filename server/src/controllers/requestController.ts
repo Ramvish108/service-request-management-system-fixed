@@ -63,18 +63,31 @@ export const createRequest = async (req: AuthRequest, res: Response) => {
 // ✅ FIXED: Users see only their own requests
 export const getRequests = async (req: AuthRequest, res: Response) => {
   try {
-    const filter: { createdBy?: string } = {};
-    
+    const { page = '1', limit = '20', search = '' } = req.query as any;
+    const pageNum = parseInt(page as string, 10) || 1;
+    const limitNum = parseInt(limit as string, 10) || 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    const filter: any = {};
+    const searchRegex = new RegExp(search as string, 'i');
+    if (search) {
+      filter.$or = [{ title: searchRegex }, { description: searchRegex }];
+    }
     if (req.user?.role !== 'ADMIN') {
       filter.createdBy = req.user?.id;
     }
-    
-    const requests = await ServiceRequest.find(filter)
-      .populate('createdBy', 'name email')
-      .populate('assignedTo', 'name email')
-      .sort({ createdAt: -1 });
 
-    return res.status(200).json(requests);
+    const [total, requests] = await Promise.all([
+      ServiceRequest.countDocuments(filter),
+      ServiceRequest.find(filter)
+        .populate('createdBy', 'name email')
+        .populate('assignedTo', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+    ]);
+
+    return res.status(200).json({ total, page: pageNum, limit: limitNum, requests });
   } catch (error) {
     console.error('Get requests error:', error);
     return res.status(500).json({ error: 'Failed to fetch requests' });
@@ -242,6 +255,28 @@ export const cancelRequest = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ 
       error: 'Failed to cancel request', 
       details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined 
+    });
+  }
+};
+
+// ✅ FIXED: Admin only delete request
+export const deleteRequest = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden - Only admins can delete requests' });
+    }
+    const { id } = req.params;
+    const request = await ServiceRequest.findById(id);
+    if (!request) {
+      return res.status(404).json({ error: 'Request not found' });
+    }
+    await ServiceRequest.findByIdAndDelete(id);
+    return res.status(200).json({ message: 'Request deleted successfully' });
+  } catch (error) {
+    console.error('Delete request error:', error);
+    return res.status(500).json({
+      error: 'Failed to delete request',
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
     });
   }
 };

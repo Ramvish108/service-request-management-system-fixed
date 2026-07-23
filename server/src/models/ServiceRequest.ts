@@ -4,6 +4,7 @@ export interface IStatusHistory {
   status: 'OPEN' | 'IN_REVIEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CANCELLED';
   changedAt: Date;
   changedBy: Types.ObjectId;
+  comment?: string;
   note?: string;
 }
 

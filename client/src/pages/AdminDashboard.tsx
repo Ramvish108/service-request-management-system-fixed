@@ -57,6 +57,16 @@ export const AdminDashboard: React.FC = () => {
       alert('Assignment failed.');
     }
   };
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this request?')) return;
+    try {
+      await api.delete(`/requests/${id}`);
+      alert('Request deleted successfully.');
+      fetchRequests();
+    } catch (err: any) {
+      alert(`Delete failed: ${err.response?.data?.error || err.message}`);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -165,6 +175,12 @@ export const AdminDashboard: React.FC = () => {
                         className="text-brand-600 hover:text-brand-900 px-3 py-1 bg-brand-50 hover:bg-brand-100 rounded-lg transition"
                       >
                         Details
+                      </button>
+                      <button
+                        onClick={() => handleDelete(req._id)}
+                        className="ml-2 text-red-600 hover:text-red-900 px-3 py-1 bg-red-50 hover:bg-red-100 rounded-lg transition"
+                      >
+                        Delete
                       </button>
                     </td>
                   </tr>
