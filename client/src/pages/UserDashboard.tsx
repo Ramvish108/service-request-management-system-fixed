@@ -17,9 +17,13 @@ export const UserDashboard: React.FC = () => {
     setError(null);
     try {
       const res = await api.get('/requests');
-      setRequests(res.data);
+      // ✅ FIX: Ensure response is always an array
+      const requestsData = Array.isArray(res.data) ? res.data : [];
+      setRequests(requestsData);
     } catch (err: any) {
+      console.error('Error fetching requests:', err);
       setError('Could not retrieve requests. Make sure backend is running.');
+      setRequests([]); // ✅ Reset to empty array on error
     } finally {
       setLoading(false);
     }
@@ -30,9 +34,13 @@ export const UserDashboard: React.FC = () => {
   }, []);
 
   const handleCancelRequest = async (id: string) => {
+    if (!window.confirm('Are you sure you want to cancel this request?')) return;
+    
     try {
-      await api.post(`/requests/${id}/cancel`);
+      await api.put(`/requests/${id}/cancel`);
       alert('Request cancelled successfully.');
+      // ✅ Refresh the list after cancellation
+      fetchRequests();
     } catch (err: any) {
       alert(err.response?.data?.error || 'Failed to cancel request');
     }
@@ -57,6 +65,7 @@ export const UserDashboard: React.FC = () => {
 
   const getPriorityBadgeClass = (priority: string) => {
     switch (priority) {
+      case 'URGENT': return 'text-red-700 bg-red-100';
       case 'HIGH': return 'text-red-600 bg-red-50';
       case 'MEDIUM': return 'text-amber-600 bg-amber-50';
       case 'LOW': return 'text-green-600 bg-green-50';
@@ -98,64 +107,72 @@ export const UserDashboard: React.FC = () => {
         </div>
       ) : requests.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-          <p className="text-slate-500">No requests found.</p>
+          <p className="text-slate-500">No requests found. Create your first request!</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Request ID</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Title</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Created By (Leak)</th>
-                <th scope="col" className="px-6 py-3 className='text-right' text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
-              {requests.map((req) => (
-                <tr key={req._id} className="hover:bg-slate-50/50 transition">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-brand-600">{req.requestNumber}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-slate-900 max-w-xs truncate">{req.title}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{req.category}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityBadgeClass(req.priority)}`}>
-                      {req.priority}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(req.status)}`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
-                    {req.createdBy?.name || 'Unknown'} ({req.createdBy?.email || 'N/A'})
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                    <button
-                      onClick={() => navigate(`/request/${req._id}`)}
-                      className="inline-flex items-center space-x-1 text-slate-600 hover:text-brand-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>View</span>
-                    </button>
-                    
-                    {req.status !== 'CANCELLED' && req.status !== 'RESOLVED' && (
-                      <button
-                        onClick={() => handleCancelRequest(req._id)}
-                        className="inline-flex items-center space-x-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition border border-red-200"
-                      >
-                        <XCircle className="h-4 w-4" />
-                        <span>Cancel</span>
-                      </button>
-                    )}
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Request ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Title</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Created By</th>
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-slate-200">
+                {requests.map((req) => (
+                  <tr key={req._id} className="hover:bg-slate-50/50 transition">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-brand-600">
+                      {req.requestNumber || req._id?.slice(-6).toUpperCase() || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-900 max-w-xs truncate">
+                      {req.title || 'Untitled'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      {req.category || 'Other'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getPriorityBadgeClass(req.priority)}`}>
+                        {req.priority || 'MEDIUM'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(req.status)}`}>
+                        {req.status || 'OPEN'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                      {req.createdBy?.name || 'Unknown'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                      <button
+                        onClick={() => navigate(`/request/${req._id}`)}
+                        className="inline-flex items-center space-x-1 text-slate-600 hover:text-brand-600 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>View</span>
+                      </button>
+                      
+                      {req.status !== 'CANCELLED' && req.status !== 'RESOLVED' && (
+                        <button
+                          onClick={() => handleCancelRequest(req._id)}
+                          className="inline-flex items-center space-x-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition border border-red-200"
+                        >
+                          <XCircle className="h-4 w-4" />
+                          <span>Cancel</span>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
