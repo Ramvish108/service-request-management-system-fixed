@@ -64,19 +64,49 @@ export const CreateRequest: React.FC = () => {
     setSuccess(null);
     setLoading(true);
 
-    try {
-      const response = await api.post('/requests', {
-        title,
-        description,
-        category,
-        priority,
-        aiSummary,
-        aiSuggestedCategory,
-        aiSuggestedPriority,
-      });
+    // ✅ ADDED: Validate input before sending
+    if (!title || !title.trim()) {
+      setError('Title is required');
+      setLoading(false);
+      return;
+    }
 
-      setSuccess(`Request created successfully! Reference: ${response.data.requestNumber}`);
+    if (!description || !description.trim()) {
+      setError('Description is required');
+      setLoading(false);
+      return;
+    }
+
+    if (title.length < 3) {
+      setError('Title must be at least 3 characters');
+      setLoading(false);
+      return;
+    }
+
+    if (description.length < 10) {
+      setError('Description must be at least 10 characters');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // ✅ FIXED: Only send required fields (remove AI fields)
+      const requestData = {
+        title: title.trim(),
+        description: description.trim(),
+        category: category || 'OTHER',
+        priority: priority || 'MEDIUM',
+      };
+
+      console.log('📤 Creating request with data:', requestData); // Debug
+
+      const response = await api.post('/requests', requestData);
       
+      console.log('📥 Create request response:', response.data); // Debug
+
+      setSuccess(`Request created successfully! Reference: ${response.data.requestNumber || response.data._id}`);
+      
+      // Reset form
       setTitle('');
       setDescription('');
       setCategory('OTHER');
@@ -86,7 +116,11 @@ export const CreateRequest: React.FC = () => {
       setAiSuggestedPriority('');
       setAiReason('');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to submit service request.');
+      console.error('❌ Create request error:', err.response?.data); // Debug
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.details || 
+                          'Failed to submit service request.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -141,6 +175,7 @@ export const CreateRequest: React.FC = () => {
                   onChange={(e) => setTitle(e.target.value)}
                   className="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
                   placeholder="e.g., VPN Connection failure at 7 PM"
+                  disabled={loading}
                 />
               </div>
 
@@ -155,6 +190,7 @@ export const CreateRequest: React.FC = () => {
                   onChange={(e) => setDescription(e.target.value)}
                   className="block w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
                   placeholder="Provide logs, error codes, and steps to reproduce."
+                  disabled={loading}
                 />
               </div>
 
@@ -165,6 +201,7 @@ export const CreateRequest: React.FC = () => {
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                    disabled={loading}
                   >
                     <option value="SOFTWARE">Software Issues</option>
                     <option value="HARDWARE">Hardware Issues</option>
@@ -180,6 +217,7 @@ export const CreateRequest: React.FC = () => {
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
                     className="block w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                    disabled={loading}
                   >
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium</option>
@@ -199,11 +237,10 @@ export const CreateRequest: React.FC = () => {
                 Analyze your input to generate a concise summary and suggested configuration metrics.
               </p>
 
-              {/* ✅ FIXED: Added disabled={loadingAI} */}
               <button
                 type="button"
                 onClick={handleAIAnalyze}
-                disabled={loadingAI}
+                disabled={loadingAI || loading}
                 className="w-full flex justify-center items-center space-x-1.5 bg-gradient-to-r from-brand-600 to-indigo-600 text-white text-xs font-semibold py-2 px-3 rounded-lg shadow-sm hover:from-brand-700 hover:to-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingAI ? (
